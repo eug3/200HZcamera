@@ -1,0 +1,23 @@
+# Build directory
+build/
+
+# OS specific
+.DS_Store
+
+# Toolchain / IDE
+.vscode/
+.mxproject
+.project
+.cproject
+.settings/
+.classpath
+*.launch
+
+# Temporary files
+*.bak
+*.tmp
+*.d
+*.o
+*.lst
+*.map
+*.su
