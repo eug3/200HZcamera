@@ -97,31 +97,38 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    uint32_t start_tick;
+    uint32_t start_tick; 
 
+    // Initial State: Both Low
+    HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
     // State 1: Wan High, Tui Low
+    start_tick = DWT->CYCCNT;
+    while ((DWT->CYCCNT - start_tick) < (10 * (HAL_RCC_GetHCLKFreq() / 1000000)));
+     
     HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
 
-    // Delay 2.5ms (2500us)
+    // Delay 0.49ms (490us)
     start_tick = DWT->CYCCNT;
-    while ((DWT->CYCCNT - start_tick) < (2500 * (HAL_RCC_GetHCLKFreq() / 1000000)));
-
+    while ((DWT->CYCCNT - start_tick) < (490 * (HAL_RCC_GetHCLKFreq() / 1000000)));
+    start_tick = DWT->CYCCNT;
+    while ((DWT->CYCCNT - start_tick) < (10 * (HAL_RCC_GetHCLKFreq() / 1000000)));
     // State 2: Wan Low, Tui High
     HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_SET);
 
-    // Delay 2.5ms (2500us)
+    // Delay 0.49ms (490us)
     start_tick = DWT->CYCCNT;
-    while ((DWT->CYCCNT - start_tick) < (2500 * (HAL_RCC_GetHCLKFreq() / 1000000)));
-
+    while ((DWT->CYCCNT - start_tick) < (490 * (HAL_RCC_GetHCLKFreq() / 1000000)));
+ 
     /* USER CODE END WHILE */
 
 
 
-    /* USER CODE BEGIN 3 */
+    
   }
-  /* USER CODE END 3 */
+  
 }
 
 /**
