@@ -95,40 +95,81 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint32_t ticks_per_us = HAL_RCC_GetHCLKFreq() / 1000000;
+  uint32_t cycle_start_tick = DWT->CYCCNT;
+  
+  // Ensure Cam_enable is set
+  HAL_GPIO_WritePin(Cam_enable_GPIO_Port, Cam_enable_Pin, GPIO_PIN_SET);
+
   while (1)
   {
-    uint32_t start_tick; 
+    uint32_t current_tick = DWT->CYCCNT;
+    uint32_t elapsed_ticks = current_tick - cycle_start_tick;
+    uint32_t elapsed_us = elapsed_ticks / ticks_per_us;
 
-    // Initial State: Both Low
-    HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
-    // State 1: Wan High, Tui Low
-    start_tick = DWT->CYCCNT;
-    while ((DWT->CYCCNT - start_tick) < (10 * (HAL_RCC_GetHCLKFreq() / 1000000)));
-     
-    HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
+    // 1 second cycle (1,000,000 us)
+    if (elapsed_us >= 1000000)
+    {
+      cycle_start_tick = current_tick;
+      elapsed_us = 0;
+      elapsed_ticks = 0; // Reset for safety
+    }
 
-    // Delay 0.49ms (490us)
-    start_tick = DWT->CYCCNT;
-    while ((DWT->CYCCNT - start_tick) < (490 * (HAL_RCC_GetHCLKFreq() / 1000000)));
-    start_tick = DWT->CYCCNT;
-    while ((DWT->CYCCNT - start_tick) < (10 * (HAL_RCC_GetHCLKFreq() / 1000000)));
-    // State 2: Wan Low, Tui High
-    HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_SET);
+    // --- Task 1: Push-Pull (Wan/Tui) ---
+    // Active for first 200ms (200,000 us)
+    if (elapsed_us < 200000)
+    {
+      // 1000Hz signal -> 1000us period
+      uint32_t sub_cycle_us = elapsed_us % 1000;
 
-    // Delay 0.49ms (490us)
-    start_tick = DWT->CYCCNT;
-    while ((DWT->CYCCNT - start_tick) < (490 * (HAL_RCC_GetHCLKFreq() / 1000000)));
- 
-    /* USER CODE END WHILE */
+      // Dead time 10us, Active 490us, Dead time 10us, Active 490us
+      if (sub_cycle_us < 10)
+      {
+        // Dead time 1 (0-10us)
+        HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
+      }
+      else if (sub_cycle_us < 500)
+      {
+        // State 1: Wan High (10-500us)
+        HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
+      }
+      else if (sub_cycle_us < 510)
+      {
+        // Dead time 2 (500-510us)
+        HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
+      }
+      else
+      {
+        // State 2: Tui High (510-1000us)
+        HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_SET);
+      }
+    }
+    else
+    {
+      // Inactive period (200ms - 1000ms)
+      HAL_GPIO_WritePin(Wan_GPIO_Port, Wan_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(Tui_GPIO_Port, Tui_Pin, GPIO_PIN_RESET);
+    }
 
-
-
-    
+    // --- Task 2: Camera Shoot ---
+    // Trigger at 50ms (50,000 us) for 5ms (5,000 us)
+    if (elapsed_us >= 50000 && elapsed_us < 55000)
+    {
+      HAL_GPIO_WritePin(shoot_GPIO_Port, shoot_Pin, GPIO_PIN_SET);
+    }
+    else
+    {
+      HAL_GPIO_WritePin(shoot_GPIO_Port, shoot_Pin, GPIO_PIN_RESET);
+    }
   }
-  
+  /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+  /* USER CODE END 3 */
 }
 
 /**
@@ -183,10 +224,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Cam_Pin|Wan_Pin|Tui_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, Cam_enable_Pin|Wan_Pin|Tui_Pin|shoot_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Cam_Pin Wan_Pin Tui_Pin */
-  GPIO_InitStruct.Pin = Cam_Pin|Wan_Pin|Tui_Pin;
+  /*Configure GPIO pins : Cam_enable_Pin Wan_Pin Tui_Pin shoot_Pin */
+  GPIO_InitStruct.Pin = Cam_enable_Pin|Wan_Pin|Tui_Pin|shoot_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

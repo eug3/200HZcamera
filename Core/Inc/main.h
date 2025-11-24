@@ -57,12 +57,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Cam_Pin GPIO_PIN_8
-#define Cam_GPIO_Port GPIOA
+#define Cam_enable_Pin GPIO_PIN_8
+#define Cam_enable_GPIO_Port GPIOA
 #define Wan_Pin GPIO_PIN_9
 #define Wan_GPIO_Port GPIOA
 #define Tui_Pin GPIO_PIN_10
 #define Tui_GPIO_Port GPIOA
+#define shoot_Pin GPIO_PIN_11
+#define shoot_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
